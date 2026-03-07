@@ -44,14 +44,14 @@ From Gulf Watch user feedback (300+ active users):
 
 ## 3. Proposed Solution
 
-### 3.1 Core Concept: Source Verification Tiers
+### 3.1 Source Verification Tiers
 
-| Tier | Description | Requirement | Visual Indicator |
-|------|-------------|-------------|------------------|
-| **Verified** | Multiple independent sources | 2+ sources, <30 min apart | ✅ Green badge |
-| **Confirmed** | Official source + 1 other | Government + media | 🔵 Blue badge |
-| **Reported** | Single credible source | Major news outlet | ⚪ Gray badge |
-| **Unverified** | Single unknown source | Social media, new account | ⚠️ Yellow warning |
+| Tier | Requirement | Badge |
+|------|-------------|-------|
+| **Verified** | 2+ independent sources | ✅ Green |
+| **Confirmed** | Government + media | 🔵 Blue |
+| **Reported** | Single credible source | ⚪ Gray |
+| **Unverified** | Single unknown source | ⚠️ Yellow |
 
 ### 3.2 Technical Implementation
 
@@ -242,138 +242,65 @@ message ListVerifiedIncidentsRequest {
 }
 ```
 
-### 3.3 UI/UX Changes
+### 3.3 UI Changes
 
-#### 3.3.1 Map Visualization
-- Verified incidents: Solid color markers with ✅
-- Unverified incidents: Faded/hollow markers with ⚠️
-- Hover: Show "2 sources confirm this" tooltip
-
-#### 3.3.2 List View
-```
-[✅ VERIFIED] Missile intercepted over Tel Aviv
-├── IDF Spokesperson (Official) - 14:32
-├── Reuters (Major News) - 14:33
-└── Times of Israel (Regional) - 14:35
-
-[⚠️ UNVERIFIED] Unconfirmed drone sighting near Dubai
-└── Single Twitter account - 16:45
-```
-
-#### 3.3.3 Filter Controls
-- "Show only verified incidents" toggle
-- "Minimum sources" slider (1-5)
-- Source tier checkboxes
+- **Map**: Verified = solid markers, Unverified = hollow
+- **List**: Badge + expandable source list
+- **Filters**: Toggle for "verified only", source tier checkboxes
 
 ---
 
-## 4. Research & Prior Art
+## 4. Research
 
-### 4.1 Existing Solutions
+- **IEEE 2024**: 3+ sources = 94% accuracy
+- **RAND 2023**: Tier-based > binary trust
+- **Gulf Watch**: 300+ users requested this feature
 
-| Platform | Approach | Lessons |
-|----------|----------|---------|
-**Bellingcat** | Manual verification by analysts | Gold standard, but doesn't scale |
-**Twitter Community Notes** | Crowd-sourced fact-checking | Good for social media, not real-time |
-**Google News** | Automatic clustering | Fast but opaque criteria |
-**Reuters Fact Check** | Editorial review | High quality, days of delay |
-
-### 4.2 Academic Research
-- **"Multi-Source Data Fusion for Crisis Events"** (IEEE, 2024): Shows 3+ independent sources = 94% accuracy
-- **"Source Credibility in OSINT"** (RAND, 2023): Tier-based classification outperforms binary trust
-- **"Real-time Misinformation Detection"** (Stanford, 2025): Time-window clustering most effective
-
-### 4.3 Why This Approach
-1. **Transparent:** Users see exactly which sources confirmed
-2. **Configurable:** Organizations can set their own thresholds
-3. **Non-blocking:** Unverified incidents still shown (with warning)
-4. **Extensible:** Easy to add new source tiers or verification rules
+**Why this approach:** Transparent, configurable, non-blocking, extensible.
 
 ---
 
-## 5. Implementation Plan
+## 5. Implementation Approach
 
-### Phase 1: Core Infrastructure (2 weeks)
-- [ ] Add protobuf schemas to `proto/worldmonitor/verification/v1/`
-- [ ] Run `make generate` to create TypeScript stubs
-- [ ] Create handler implementation in `server/worldmonitor/verification/v1/handler.ts`
-- [ ] Register handler in `api/verification/v1/` gateway
-- [ ] Implement clustering algorithm in `src/services/verification/`
-- [ ] Unit tests for verification logic
+This can be implemented incrementally:
 
-### Phase 2: Integration (1 week)
-- [ ] Connect to existing news/conflict pipelines in `src/services/news/`
-- [ ] Add verification layer to incident processing
-- [ ] Backfill verification status for recent events (Redis cache)
-- [ ] Performance optimization with incremental updates
+1. **Proto definitions** → `proto/worldmonitor/verification/v1/`
+2. **Backend** → Sebuf handlers + clustering engine
+3. **Frontend** → Badge components + filter controls
+4. **Integration** → Wire into existing news/conflict pipelines
 
-### Phase 3: UI (1 week)
-- [ ] Create verification badge component in `src/components/verification/`
-- [ ] Update map markers in `src/components/map/layers/`
-- [ ] Add filter controls to `src/components/panels/`
-- [ ] Mobile responsiveness for all variants (full/tech/finance)
+**Key files:**
+- `proto/worldmonitor/verification/v1/*.proto`
+- `server/worldmonitor/verification/v1/handler.ts`
+- `src/components/verification/*.ts`
 
-### Phase 4: Validation (1 week)
-- [ ] Add feature flag for gradual rollout
-- [ ] A/B test with select users
-- [ ] Measure false positive/negative rates
-- [ ] Iterate on confidence thresholds
-
-**Total: 5 weeks to production**
-
-### File Structure
-```
-proto/worldmonitor/verification/v1/
-├── verified_incident.proto
-├── service.proto
-└── list_verified_incidents.proto
-
-server/worldmonitor/verification/v1/
-└── handler.ts          # Sebuf handler implementation
-
-api/verification/v1/
-└── [rpc].ts            # Edge function gateway
-
-src/services/verification/
-├── index.ts            # Client wrapper
-├── cluster.ts          # Incident clustering
-└── confidence.ts       # Confidence scoring
-
-src/components/verification/
-├── VerificationBadge.ts
-├── VerificationFilter.ts
-└── SourceList.ts
-```
+Full file structure in appendix.
 
 ---
 
-## 6. Risks & Mitigations
+## 6. Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| **False negatives** (real event marked unverified) | Medium | Conservative defaults, manual override |
-| **Clustering errors** (unrelated events grouped) | High | Human review queue for edge cases |
-| **Performance** (clustering at scale) | Medium | Pre-compute, incremental updates |
-| **Source bias** (over-weight Western sources) | High | Diverse source tier board |
+- False negatives → Conservative defaults + manual override
+- Clustering errors → Human review queue
+- Performance → Incremental updates
+- Source bias → Diverse tier definitions
 
 ---
 
 ## 7. Success Metrics
 
-- **User trust:** "Do you trust this information?" survey (target: +20%)
-- **False alarm reduction:** Measured against ground truth (target: -30%)
-- **Engagement:** Time spent on verified vs unverified (track ratio)
-- **Adoption:** % of users enabling verification filters (target: 60%)
+- User trust survey: +20%
+- False alarm reduction: -30%
+- Filter adoption: 60%
 
 ---
 
-## 8. Questions for Maintainers
+## 8. Open Questions
 
-1. **Scope:** Should this be core feature or premium tier?
-2. **Algorithm:** Automate fully or have human review queue?
-3. **Sources:** Who defines "official" sources per country?
-4. **Transparency:** Show confidence scores or just tiers?
-5. **Backfill:** Verify historical data or start from deploy?
+1. Core feature or premium tier?
+2. Full auto or human review queue?
+3. Who defines official sources per country?
+4. Show confidence scores or just tiers?
 
 ---
 
@@ -411,16 +338,11 @@ src/components/verification/
 
 ## 10. Conclusion
 
-Multi-source verification addresses a **real user need** identified in Gulf Watch deployment: users want to assess information reliability quickly during crisis events. 
+Users need trust indicators for crisis information. This solution is technically feasible, well-researched, and deployable incrementally.
 
-The proposed solution is:
-- **Technically feasible** within World Monitor's existing architecture
-- **Well-researched** with academic and industry precedents
-- **User-centric** with transparent, configurable trust indicators
-- **Incremental** - can be deployed and tested in phases
-
-**Recommendation:** Proceed with Phase 1 (core infrastructure) pending maintainer approval.
+**Ready for discussion and implementation.**
 
 ---
 
-*Prepared with input from Gulf Watch user feedback (300+ users, MENA region).*
+*Based on Gulf Watch user feedback (300+ users, MENA region).*
+
