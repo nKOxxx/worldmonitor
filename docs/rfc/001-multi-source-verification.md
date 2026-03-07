@@ -1,8 +1,8 @@
 # RFC: Multi-Source Verification for World Monitor
 
-**Status:** Draft  
-**Author:** Nikola Stojanow (nKOxxx)  
-**Date:** March 7, 2026  
+**Status:** Draft
+**Author:** nKOxxx
+**Date:** March 7, 2026
 **Related:** Previous air defense feature request
 
 ---
@@ -344,5 +344,5 @@ Users need trust indicators for crisis information. This solution is technically
 
 ---
 
-*Based on Gulf Watch user feedback (300+ users, MENA region).*
+*Based on user feedback from Gulf Watch deployments.*
 
