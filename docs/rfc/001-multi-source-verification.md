@@ -57,18 +57,34 @@ From Gulf Watch user feedback (300+ active users):
 
 #### 3.2.1 Data Model Extension
 
+**File:** `proto/worldmonitor/verification/v1/verified_incident.proto`
+
 ```protobuf
-// New: verified_incident.proto
 syntax = "proto3";
 
 package worldmonitor.verification.v1;
 
+import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
+import "worldmonitor/core/v1/geo.proto";
+
+// VerifiedIncident represents an incident with source verification metadata
 message VerifiedIncident {
   // Core incident data
-  string incident_id = 1;
-  string title = 2;
+  string incident_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  string title = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   worldmonitor.core.v1.GeoCoordinates location = 3;
-  int64 occurred_at = 4;
+  
+  // Time as Unix epoch milliseconds per WM convention
+  int64 occurred_at = 4 [
+    (sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER
+  ];
   
   // Verification fields (NEW)
   VerificationStatus status = 5;
@@ -92,7 +108,12 @@ message Source {
   string source_id = 1;      // e.g., "reuters", "uae_moi"
   string source_name = 2;    // Human readable
   SourceTier tier = 3;       // Reliability classification
-  int64 reported_at = 4;     // When this source reported it
+  
+  // Time as Unix epoch milliseconds per WM convention
+  int64 reported_at = 4 [
+    (sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER
+  ];
+  
   string source_url = 5;     // Link to original
 }
 
@@ -160,20 +181,45 @@ def calculate_confidence(sources: List[Source], cluster: Cluster) -> float:
 
 #### 3.2.3 API Endpoints
 
+**File:** `proto/worldmonitor/verification/v1/service.proto`
+
 ```protobuf
-// Service definition
+syntax = "proto3";
+
+package worldmonitor.verification.v1;
+
+import "sebuf/http/annotations.proto";
+import "worldmonitor/core/v1/geo.proto";
+import "worldmonitor/verification/v1/verified_incident.proto";
+
+// VerificationService provides source verification for incidents
 service VerificationService {
   // List verified incidents with filtering
   rpc ListVerifiedIncidents(ListVerifiedIncidentsRequest) 
-    returns (ListVerifiedIncidentsResponse);
+    returns (ListVerifiedIncidentsResponse) {
+    option (sebuf.http.config) = {
+      path: "/api/verification/v1/incidents"
+      method: POST
+    };
+  }
   
   // Get verification details for single incident
   rpc GetVerificationDetails(GetVerificationDetailsRequest)
-    returns (GetVerificationDetailsResponse);
+    returns (GetVerificationDetailsResponse) {
+    option (sebuf.http.config) = {
+      path: "/api/verification/v1/details"
+      method: POST
+    };
+  }
   
   // Stream real-time verification updates
   rpc StreamVerifications(StreamVerificationsRequest)
-    returns (stream VerificationUpdate);
+    returns (stream VerificationUpdate) {
+    option (sebuf.http.config) = {
+      path: "/api/verification/v1/stream"
+      method: POST
+    };
+  }
 }
 
 message ListVerifiedIncidentsRequest {
@@ -186,9 +232,13 @@ message ListVerifiedIncidentsRequest {
   // Geographic bounds
   worldmonitor.core.v1.GeoBoundingBox bounds = 3;
   
-  // Time range
-  int64 start_time = 4;
-  int64 end_time = 5;
+  // Time range as Unix epoch milliseconds
+  int64 start_time = 4 [
+    (sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER
+  ];
+  int64 end_time = 5 [
+    (sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER
+  ];
 }
 ```
 
@@ -244,28 +294,56 @@ message ListVerifiedIncidentsRequest {
 ## 5. Implementation Plan
 
 ### Phase 1: Core Infrastructure (2 weeks)
-- [ ] Create verification service skeleton
-- [ ] Add protobuf schemas
-- [ ] Implement clustering algorithm
+- [ ] Add protobuf schemas to `proto/worldmonitor/verification/v1/`
+- [ ] Run `make generate` to create TypeScript stubs
+- [ ] Create handler implementation in `server/worldmonitor/verification/v1/handler.ts`
+- [ ] Register handler in `api/verification/v1/` gateway
+- [ ] Implement clustering algorithm in `src/services/verification/`
 - [ ] Unit tests for verification logic
 
 ### Phase 2: Integration (1 week)
-- [ ] Connect to existing news/conflict pipelines
-- [ ] Backfill verification status for recent events
-- [ ] Performance optimization (indexing)
+- [ ] Connect to existing news/conflict pipelines in `src/services/news/`
+- [ ] Add verification layer to incident processing
+- [ ] Backfill verification status for recent events (Redis cache)
+- [ ] Performance optimization with incremental updates
 
 ### Phase 3: UI (1 week)
-- [ ] Map marker updates
-- [ ] List view badges
-- [ ] Filter controls
-- [ ] Mobile responsiveness
+- [ ] Create verification badge component in `src/components/verification/`
+- [ ] Update map markers in `src/components/map/layers/`
+- [ ] Add filter controls to `src/components/panels/`
+- [ ] Mobile responsiveness for all variants (full/tech/finance)
 
 ### Phase 4: Validation (1 week)
+- [ ] Add feature flag for gradual rollout
 - [ ] A/B test with select users
 - [ ] Measure false positive/negative rates
 - [ ] Iterate on confidence thresholds
 
 **Total: 5 weeks to production**
+
+### File Structure
+```
+proto/worldmonitor/verification/v1/
+├── verified_incident.proto
+├── service.proto
+└── list_verified_incidents.proto
+
+server/worldmonitor/verification/v1/
+└── handler.ts          # Sebuf handler implementation
+
+api/verification/v1/
+└── [rpc].ts            # Edge function gateway
+
+src/services/verification/
+├── index.ts            # Client wrapper
+├── cluster.ts          # Incident clustering
+└── confidence.ts       # Confidence scoring
+
+src/components/verification/
+├── VerificationBadge.ts
+├── VerificationFilter.ts
+└── SourceList.ts
+```
 
 ---
 
