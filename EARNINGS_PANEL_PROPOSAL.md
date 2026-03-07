@@ -256,24 +256,22 @@ earnings: { name: 'Earnings Calendar', enabled: true, priority: 2 },
 
 ---
 
-## Implementation Phases
+## Implementation Approach
 
-**Phase 1: Core (3 days)**
-- [ ] Add proto definitions
-- [ ] Implement Yahoo Finance fetcher
-- [ ] Basic panel component
+**Phase 1: Core**
+- Add proto definitions
+- Implement Yahoo Finance fetcher
+- Basic panel component
 
-**Phase 2: Polish (2 days)**
-- [ ] Add to Finance variant config
-- [ ] Styling matching WM design
-- [ ] Error handling & loading states
+**Phase 2: Polish**
+- Add to Finance variant config
+- Styling matching WM design
+- Error handling & loading states
 
 **Phase 3: Enhancements (Optional)**
-- [ ] AI summary integration
-- [ ] Historical chart
-- [ ] Sector filtering
-
-**Total: 1 week**
+- AI summary integration
+- Historical chart
+- Sector filtering
 
 ---
 
