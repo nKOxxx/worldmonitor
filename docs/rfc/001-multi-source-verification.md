@@ -35,7 +35,7 @@ This RFC proposes adding **automated multi-source verification** to increase dat
 **Current World Monitor behavior:** Shows all three with equal weight. User cannot tell which is reliable.
 
 ### 2.3 User Need
-From Gulf Watch user feedback (300+ active users):
+From Gulf Watch deployment (UAE-focused monitoring):
 > "I need to know if this is confirmed or just someone tweeting"
 > "During missile alerts, I only trust government sources"
 > "False alarms cause panic - need verification indicator"
@@ -254,7 +254,6 @@ message ListVerifiedIncidentsRequest {
 
 - **IEEE 2024**: 3+ sources = 94% accuracy
 - **RAND 2023**: Tier-based > binary trust
-- **Gulf Watch**: 300+ users requested this feature
 
 **Why this approach:** Transparent, configurable, non-blocking, extensible.
 
@@ -344,5 +343,5 @@ Users need trust indicators for crisis information. This solution is technically
 
 ---
 
-*Based on user feedback from Gulf Watch deployments.*
+*Based on lessons from Gulf Watch deployment.*
 
